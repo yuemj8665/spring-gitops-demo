@@ -9,7 +9,7 @@ spec:
   project: default
   
   source:
-    repoURL: https://gitlab.com/your-group/java-practice.git
+    repoURL: https://github.com/yuemj8665/javaPractice_20260125.git
     targetRevision: main
     path: k8s/overlays/prod  # Kustomize overlay 경로
     

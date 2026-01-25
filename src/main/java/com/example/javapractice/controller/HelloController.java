@@ -27,4 +27,11 @@ public class HelloController {
         response.put("status", "UP");
         return response;
     }
+
+    @GetMapping("/info")
+    public Map<String, String> info() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "INFO");
+        return response;
+    }
 }
