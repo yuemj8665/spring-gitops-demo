@@ -1,0 +1,43 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: java-practice-prod
+
+namePrefix: prod-
+
+resources:
+  - ../../base
+  - ingress.yaml
+  - secret.yaml
+
+# 이미지 태그 오버라이드
+images:
+  - name: java-practice
+    newName: registry.gitlab.com/your-group/java-practice
+    newTag: latest
+
+# ConfigMap 패치
+configMapGenerator:
+  - name: java-practice-config
+    behavior: merge
+    literals:
+      - APP_MESSAGE=Hello from Production!
+      - SPRING_PROFILES_ACTIVE=production
+
+# 레플리카 수 조정
+replicas:
+  - name: java-practice
+    count: 3
+
+# 리소스 제한 패치
+patches:
+  - target:
+      kind: Deployment
+      name: java-practice
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/memory
+        value: "512Mi"
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/limits/memory
+        value: "1Gi"

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: java-practice-dev
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://gitlab.com/your-group/java-practice.git
+    targetRevision: develop
+    path: k8s/overlays/dev  # Kustomize overlay 경로
+    
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: java-practice-dev
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: java-practice-prod
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://gitlab.com/your-group/java-practice.git
+    targetRevision: main
+    path: k8s/overlays/prod  # Kustomize overlay 경로
+    
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: java-practice-prod
+  
+  syncPolicy:
+    # 운영 환경은 수동 동기화 권장
+    syncOptions:
+      - CreateNamespace=true

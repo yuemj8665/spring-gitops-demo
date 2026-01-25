@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: java-practice
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  
+  source:
+    repoURL: https://gitlab.com/your-group/java-practice.git  # Git 저장소 URL 수정 필요
+    targetRevision: main
+    path: k8s  # 쿠버네티스 매니페스트 경로
+    
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: java-practice
+  
+  syncPolicy:
+    automated:
+      prune: true        # 삭제된 리소스 자동 정리
+      selfHeal: true     # 수동 변경 시 자동 복구
+      allowEmpty: false
+    syncOptions:
+      - CreateNamespace=true
+      - PruneLast=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,116 @@
+stages:
+  - build
+  - test
+  - docker
+  - update-manifest
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+
+cache:
+  paths:
+    - .m2/repository/
+
+# ===================
+# Build Stage
+# ===================
+build:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn clean compile -B
+  artifacts:
+    paths:
+      - target/
+    expire_in: 1 hour
+
+# ===================
+# Test Stage
+# ===================
+test:
+  stage: test
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn test -B
+  artifacts:
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+
+# ===================
+# Docker Build & Push
+# ===================
+docker-build:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+    # main 브랜치일 경우 latest 태그도 추가
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "main" ]; then
+        docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:latest
+        docker push $CI_REGISTRY_IMAGE:latest
+      fi
+    # develop 브랜치일 경우 develop 태그 추가
+    - |
+      if [ "$CI_COMMIT_BRANCH" == "develop" ]; then
+        docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA $CI_REGISTRY_IMAGE:develop
+        docker push $CI_REGISTRY_IMAGE:develop
+      fi
+  only:
+    - main
+    - develop
+
+# ===================
+# Update K8s Manifest (GitOps)
+# ArgoCD가 이 변경을 감지하여 자동 배포
+# ===================
+update-manifest-dev:
+  stage: update-manifest
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git curl
+  script:
+    - git config --global user.email "yuemjmahu@gmail.com"
+    - git config --global user.name "MJMJ"
+    # kustomization.yaml의 이미지 태그 업데이트
+    - |
+      cd k8s/overlays/dev
+      sed -i "s/newTag: .*/newTag: $CI_COMMIT_SHORT_SHA/" kustomization.yaml
+    # 변경사항 커밋 & 푸시
+    - git add k8s/overlays/dev/kustomization.yaml
+    - git commit -m "[skip ci] Update dev image to $CI_COMMIT_SHORT_SHA"
+    - git push https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git HEAD:$CI_COMMIT_BRANCH
+  only:
+    - develop
+  needs:
+    - docker-build
+
+update-manifest-prod:
+  stage: update-manifest
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git curl
+  script:
+    - git config --global user.email "ci@gitlab.com"
+    - git config --global user.name "GitLab CI"
+    # kustomization.yaml의 이미지 태그 업데이트
+    - |
+      cd k8s/overlays/prod
+      sed -i "s/newTag: .*/newTag: $CI_COMMIT_SHORT_SHA/" kustomization.yaml
+    # 변경사항 커밋 & 푸시
+    - git add k8s/overlays/prod/kustomization.yaml
+    - git commit -m "[skip ci] Update prod image to $CI_COMMIT_SHORT_SHA"
+    - git push https://gitlab-ci-token:${GITLAB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git HEAD:$CI_COMMIT_BRANCH
+  only:
+    - main
+  when: manual  # 운영은 수동 승인 필요
+  needs:
+    - docker-build

@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-practice
+  labels:
+    app: java-practice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: java-practice
+  template:
+    metadata:
+      labels:
+        app: java-practice
+    spec:
+      containers:
+        - name: java-practice
+          image: ${CI_REGISTRY_IMAGE}:${CI_COMMIT_SHORT_SHA}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: java-practice-config
+            - secretRef:
+                name: java-practice-secret
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      imagePullSecrets:
+        - name: gitlab-registry-secret
