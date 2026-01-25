@@ -14,7 +14,7 @@ resources:
 images:
   - name: java-practice
     newName: java-practice_20260125
-    newTag: latest
+    newTag: "20260125_1712"
 
 # ConfigMap 패치
 configMapGenerator:
