@@ -8,7 +8,7 @@ spec:
   
   # 허용되는 소스 저장소
   sourceRepos:
-    - https://gitlab.com/your-group/java-practice.git
+    - https://github.com/yuemj8665/javaPractice_20260125.git
   
   # 허용되는 배포 대상
   destinations:
