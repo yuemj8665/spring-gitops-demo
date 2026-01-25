@@ -10,10 +10,10 @@ resources:
   - ingress.yaml
   - secret.yaml
 
-# 이미지 태그 오버라이드
+# 이미지 태그 오버라이드 (로컬 Docker 이미지 사용)
 images:
   - name: java-practice
-    newName: registry.gitlab.com/your-group/java-practice
+    newName: java-practice_20260125
     newTag: latest
 
 # ConfigMap 패치
