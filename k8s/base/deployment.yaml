@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: java-practice
+  name: spring-gitops-demo
   labels:
-    app: java-practice
+    app: spring-gitops-demo
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: java-practice
+      app: spring-gitops-demo
   template:
     metadata:
       labels:
-        app: java-practice
+        app: spring-gitops-demo
     spec:
       containers:
-        - name: java-practice
-          image: java-practice:latest  # ArgoCD Image Updater 또는 CI에서 교체
+        - name: spring-gitops-demo
+          image: spring-gitops-demo:latest  # ArgoCD Image Updater 또는 CI에서 교체
           ports:
             - containerPort: 8080
           envFrom:
             - configMapRef:
-                name: java-practice-config
+                name: spring-gitops-demo-config
           resources:
             requests:
               memory: "256Mi"

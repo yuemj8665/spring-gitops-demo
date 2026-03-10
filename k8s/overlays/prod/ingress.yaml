@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: java-practice-ingress
+  name: spring-gitops-demo-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -9,16 +9,16 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - java-practice.example.com
-      secretName: java-practice-tls
+        - spring-gitops-demo.example.com
+      secretName: spring-gitops-demo-tls
   rules:
-    - host: java-practice.example.com
+    - host: spring-gitops-demo.example.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: prod-java-practice-service
+                name: prod-spring-gitops-demo-service
                 port:
                   number: 80

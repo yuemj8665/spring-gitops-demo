@@ -1,22 +1,22 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: java-practice-project
+  name: spring-gitops-demo-project
   namespace: argocd
 spec:
   description: Java Practice Application Project
   
   # 허용되는 소스 저장소
   sourceRepos:
-    - https://github.com/yuemj8665/javaPractice_20260125.git
+    - https://github.com/yuemj8665/spring-gitops-demo.git
   
   # 허용되는 배포 대상
   destinations:
-    - namespace: java-practice
+    - namespace: spring-gitops-demo
       server: https://kubernetes.default.svc
-    - namespace: java-practice-dev
+    - namespace: spring-gitops-demo-dev
       server: https://kubernetes.default.svc
-    - namespace: java-practice-prod
+    - namespace: spring-gitops-demo-prod
       server: https://kubernetes.default.svc
   
   # 허용되는 클러스터 리소스

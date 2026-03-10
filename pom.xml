@@ -13,9 +13,9 @@
     </parent>
     
     <groupId>com.example</groupId>
-    <artifactId>java-practice</artifactId>
+    <artifactId>spring-gitops-demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>java-practice</name>
+    <name>spring-gitops-demo</name>
     <description>Java Practice Spring Boot Application</description>
     
     <properties>

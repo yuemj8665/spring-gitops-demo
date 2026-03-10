@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: java-practice-dev
+namespace: spring-gitops-demo-dev
 
 namePrefix: dev-
 
@@ -10,13 +10,13 @@ resources:
 
 # 이미지 태그 오버라이드 (로컬 Docker 이미지 사용)
 images:
-  - name: java-practice
-    newName: java-practice_20260125
+  - name: spring-gitops-demo
+    newName: spring-gitops-demo_20260125
     newTag: "20260125_1712"
 
 # ConfigMap 패치
 configMapGenerator:
-  - name: java-practice-config
+  - name: spring-gitops-demo-config
     behavior: merge
     literals:
       - APP_MESSAGE=Hello from DEV!
@@ -24,5 +24,5 @@ configMapGenerator:
 
 # 레플리카 수 조정
 replicas:
-  - name: java-practice
+  - name: spring-gitops-demo
     count: 1

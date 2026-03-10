@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: java-practice-config
+  name: spring-gitops-demo-config
 data:
   APP_MESSAGE: "Hello from Spring Boot!"
   SPRING_PROFILES_ACTIVE: "default"

@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: java-practice
+    name: spring-gitops-demo
 
 app:
   message: ${APP_MESSAGE:Hello from Spring Boot!}

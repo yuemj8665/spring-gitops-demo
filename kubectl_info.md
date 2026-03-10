@@ -128,13 +128,13 @@ kubectl get pods --all-namespaces
 kubectl get applications -n argocd
 
 # 서비스 조회
-kubectl get svc -n java-practice-dev
+kubectl get svc -n spring-gitops-demo-dev
 
 # YAML 형식으로 상세 출력
-kubectl get application java-practice-dev -n argocd -o yaml
+kubectl get application spring-gitops-demo-dev -n argocd -o yaml
 
 # JSON 경로로 특정 값만 추출
-kubectl get application java-practice-dev -n argocd -o jsonpath='{.status.conditions[0].message}'
+kubectl get application spring-gitops-demo-dev -n argocd -o jsonpath='{.status.conditions[0].message}'
 ```
 
 **옵션 설명:**
@@ -160,10 +160,10 @@ kubectl describe <리소스타입> <리소스명> [-n <네임스페이스>]
 
 ```bash
 # Pod 상세 정보
-kubectl describe pod dev-java-practice-xxx -n java-practice-dev
+kubectl describe pod dev-spring-gitops-demo-xxx -n spring-gitops-demo-dev
 
 # 서비스 상세 정보
-kubectl describe svc dev-java-practice-service -n java-practice-dev
+kubectl describe svc dev-spring-gitops-demo-service -n spring-gitops-demo-dev
 ```
 
 ---
@@ -189,7 +189,7 @@ kubectl port-forward svc/argocd-server -n argocd 8081:443
 kubectl port-forward svc/argocd-server -n argocd 8081:443 &
 
 # 개발 환경 앱 접속 (로컬 8082 → 서비스 80)
-kubectl port-forward svc/dev-java-practice-service -n java-practice-dev 8082:80
+kubectl port-forward svc/dev-spring-gitops-demo-service -n spring-gitops-demo-dev 8082:80
 ```
 
 ### Pod 포트포워딩
@@ -225,16 +225,16 @@ kubectl delete <리소스타입> <리소스명> [-n <네임스페이스>]
 
 ```bash
 # 단일 리소스 삭제
-kubectl delete application java-practice-dev -n argocd
+kubectl delete application spring-gitops-demo-dev -n argocd
 
 # 여러 리소스 동시 삭제
-kubectl delete application java-practice-dev java-practice-prod -n argocd
+kubectl delete application spring-gitops-demo-dev spring-gitops-demo-prod -n argocd
 
 # YAML 파일로 정의된 리소스 삭제
 kubectl delete -f argocd/application-dev.yaml
 
 # 네임스페이스 전체 삭제 (주의: 내부 모든 리소스 삭제됨)
-kubectl delete namespace java-practice-dev
+kubectl delete namespace spring-gitops-demo-dev
 ```
 
 ---
@@ -251,7 +251,7 @@ kubectl patch <리소스타입> <리소스명> -n <네임스페이스> --type me
 
 ```bash
 # ArgoCD Application 동기화 트리거
-kubectl patch application java-practice-dev -n argocd --type merge -p '{"operation":{"sync":{}}}'
+kubectl patch application spring-gitops-demo-dev -n argocd --type merge -p '{"operation":{"sync":{}}}'
 ```
 
 ### annotate - 어노테이션 추가/수정
@@ -264,7 +264,7 @@ kubectl annotate <리소스타입> <리소스명> -n <네임스페이스> <key>=
 
 ```bash
 # ArgoCD 강제 새로고침
-kubectl annotate application java-practice-dev -n argocd argocd.argoproj.io/refresh=hard --overwrite
+kubectl annotate application spring-gitops-demo-dev -n argocd argocd.argoproj.io/refresh=hard --overwrite
 ```
 
 **옵션 설명:**
@@ -288,7 +288,7 @@ kubectl wait --for=<조건> <리소스타입>/<리소스명> -n <네임스페이
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 
 # Pod가 Ready 상태가 될 때까지 대기
-kubectl wait --for=condition=ready pod -l app=java-practice -n java-practice-dev --timeout=120s
+kubectl wait --for=condition=ready pod -l app=spring-gitops-demo -n spring-gitops-demo-dev --timeout=120s
 ```
 
 ---
