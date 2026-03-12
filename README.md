@@ -1,230 +1,164 @@
-# Java Practice - Spring Boot + Kubernetes + ArgoCD
+# spring-gitops-demo
 
-Spring Boot 애플리케이션을 Kubernetes와 ArgoCD로 배포하는 예제 프로젝트입니다.
+Spring Boot 애플리케이션을 GitOps 방식으로 Kubernetes에 자동 배포하는 데모 프로젝트입니다.
 
 ---
 
-## 프로젝트 구조
+## 4-1. 프로젝트 개요
+
+이 프로젝트는 Spring Boot 애플리케이션을 GitLab CI/CD, Docker, Kubernetes(OrbStack), ArgoCD를 사용하여
+GitOps 방식으로 자동 배포하는 전체 파이프라인을 구성한 데모입니다.
+
+- **Git Push → GitLab CI → Docker 이미지 빌드 & Push → k8s 매니페스트 업데이트 → ArgoCD 자동 동기화 → Kubernetes 배포**
+- 개발(dev)과 운영(prod) 환경을 Kustomize overlays로 분리 관리
+- Spring Boot Actuator로 헬스체크 엔드포인트 제공
+
+---
+
+## 4-2. 프로젝트 구조
 
 ```
 spring-gitops-demo/
-├── src/main/java/...          # Spring Boot 소스
-├── Dockerfile                 # Docker 이미지 빌드
+├── src/
+│   ├── main/
+│   │   ├── java/com/example/javapractice/
+│   │   │   ├── JavaPracticeApplication.java    # 메인 엔트리포인트
+│   │   │   └── controller/
+│   │   │       └── HelloController.java        # REST API 컨트롤러 (/, /health, /info)
+│   │   └── resources/
+│   │       └── application.yml                 # Spring Boot 설정
+│   └── test/
+│       └── java/.../JavaPracticeApplicationTests.java  # JUnit 테스트
 ├── k8s/
-│   ├── base/                  # Kustomize 기본 리소스
-│   └── overlays/              # 환경별 오버레이 (dev/prod)
-├── argocd/                    # ArgoCD Application 설정
-└── .gitlab-ci.yml             # CI/CD 파이프라인
+│   ├── base/                                   # Kustomize 공통 리소스
+│   │   ├── deployment.yaml                     # Pod 배포 설정
+│   │   ├── service.yaml                        # 서비스 노출 설정
+│   │   ├── configmap.yaml                      # 환경변수 설정
+│   │   └── kustomization.yaml
+│   └── overlays/
+│       ├── dev/                                # 개발 환경 오버라이드
+│       │   └── kustomization.yaml
+│       └── prod/                               # 운영 환경 오버라이드
+│           ├── kustomization.yaml
+│           ├── ingress.yaml
+│           └── secret.yaml
+├── argocd/
+│   ├── project.yaml                            # ArgoCD 프로젝트 정의
+│   ├── application-dev.yaml                    # dev 환경 ArgoCD 앱
+│   ├── application-prod.yaml                   # prod 환경 ArgoCD 앱
+│   └── application.yaml
+├── docs/
+│   └── changelog.md                            # 변경 이력
+├── Dockerfile                                  # 멀티스테이지 Docker 빌드
+├── deploy.sh                                   # 자동 배포 스크립트
+├── .gitlab-ci.yml                              # GitLab CI/CD 파이프라인
+└── pom.xml                                     # Maven 빌드 설정
 ```
 
 ---
 
-## 빠른 시작 명령어
+## 4-3. 데이터베이스 구조
+
+이 프로젝트는 데이터베이스를 사용하지 않습니다.
+단순 REST API 응답을 반환하는 상태 비저장(stateless) 애플리케이션입니다.
+
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
+| `/`       | GET    | 환영 메시지 + 상태 반환 |
+| `/health` | GET    | 헬스체크 (status: UP) |
+| `/info`   | GET    | 애플리케이션 정보 |
+| `/actuator/health` | GET | Spring Actuator 헬스체크 |
+
+---
+
+## 4-4. 사용 기술 및 선택 이유
+
+| 기술 | 버전 | 선택 이유 |
+|------|------|----------|
+| **Spring Boot** | 3.2.0 | Java 표준 웹 프레임워크, Actuator로 헬스체크 엔드포인트 자동 제공 |
+| **Java** | 17 | LTS 버전, Spring Boot 3.x 최소 요구사항 |
+| **Docker** | - | 이식성 있는 컨테이너 이미지 빌드 |
+| **Kubernetes** | - | 컨테이너 오케스트레이션, 롤링 업데이트 / 헬스체크 자동화 |
+| **OrbStack** | - | macOS 로컬 Kubernetes 환경 (Docker Desktop 대비 경량) |
+| **Kustomize** | - | 환경별(dev/prod) 설정 분리, 코드 중복 없이 오버레이 관리 |
+| **ArgoCD** | - | GitOps 방식의 자동 배포, Git이 단일 진실의 원천(Source of Truth) |
+| **GitLab CI** | - | 이미지 빌드 및 k8s 매니페스트 자동 업데이트 파이프라인 |
+| **Maven** | - | Java 빌드 표준 도구 |
+
+---
+
+## 4-5. 설치 및 실행 방법
+
+### 사전 요구사항
+- Docker 실행 중
+- OrbStack 설치 (macOS 기준)
+- kubectl 설치
+- ArgoCD 설치 (최초 1회)
+
+### 로컬 실행 (Maven)
+
+```bash
+./mvnw spring-boot:run
+# 접속: http://localhost:8080
+```
 
 ### Docker
 
 ```bash
 # 이미지 빌드
-docker build -t spring-gitops-demo_20260125 .
+docker build -t spring-gitops-demo .
 
-# 컨테이너 실행 (ON)
-docker run -d --name spring-gitops-demo -p 8080:8080 spring-gitops-demo_20260125
-
-# 컨테이너 중지 (OFF)
-docker stop spring-gitops-demo
-
-# 컨테이너 재시작
-docker start spring-gitops-demo
-
-# 컨테이너 삭제
-docker rm spring-gitops-demo
+# 컨테이너 실행
+docker run -d --name spring-gitops-demo -p 8080:8080 spring-gitops-demo
 
 # 로그 확인
 docker logs -f spring-gitops-demo
-```
 
----
+# 컨테이너 중지 및 삭제
+docker stop spring-gitops-demo && docker rm spring-gitops-demo
+```
 
 ### Kubernetes (OrbStack)
 
 ```bash
-# Kubernetes 시작 (ON)
+# Kubernetes 시작
 orbctl start k8s
 
-# Kubernetes 중지 (OFF)
-orbctl stop k8s
-
-# 클러스터 상태 확인
-kubectl cluster-info
-kubectl get nodes
-```
-
----
-
-### ArgoCD
-
-```bash
-# ArgoCD 네임스페이스 생성 (최초 1회)
-kubectl create namespace argocd
-
 # ArgoCD 설치 (최초 1회)
+kubectl create namespace argocd
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-
-# ArgoCD 상태 확인
-kubectl get pods -n argocd
-
-# ArgoCD 서버 포트포워딩 (ON) - 백그라운드 실행
-kubectl port-forward svc/argocd-server -n argocd 8080:443 &
-
-# 포트포워딩 중지 (OFF)
-pkill -f "port-forward.*argocd-server"
-
-# 초기 admin 비밀번호 확인
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
-
-# ArgoCD 접속
-# URL: https://localhost:8080
-# Username: admin
-# Password: 위에서 확인한 비밀번호
-```
-
----
-
-### ArgoCD Application 등록
-
-```bash
-# 프로젝트 디렉토리로 이동
-cd /Users/mamyeongjae/home-server/workspace/personal/spring-gitops-demo
 
 # ArgoCD Application 등록
 kubectl apply -f argocd/project.yaml
 kubectl apply -f argocd/application-dev.yaml
 kubectl apply -f argocd/application-prod.yaml
 
-# Application 상태 확인
-kubectl get applications -n argocd
-```
-
----
-
-## 전체 환경 ON/OFF
-
-### 전체 시작 (ON)
-
-```bash
-# 1. Kubernetes 시작
-orbctl start k8s
-
-# 2. ArgoCD 포트포워딩
+# ArgoCD 포트포워딩 (UI 접속용)
 kubectl port-forward svc/argocd-server -n argocd 8080:443 &
-
-# 3. 상태 확인
-kubectl get pods -n argocd
+# 접속: https://localhost:8080 (admin / 아래 명령으로 비밀번호 확인)
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d && echo
 ```
 
-### 전체 중지 (OFF)
+### 자동 배포 스크립트
 
 ```bash
-# 1. 포트포워딩 중지
-pkill -f "port-forward.*argocd-server"
+./deploy.sh
+```
 
-# 2. Kubernetes 중지
-orbctl stop k8s
+### JUnit 테스트 실행
+
+```bash
+./mvnw test
+# 또는 Docker Maven 환경
+docker run --rm -v $(pwd):/app -w /app maven:3.9-eclipse-temurin-17 mvn test
 ```
 
 ---
 
-## 유용한 명령어
+## 4-6. 에러 모음
 
-### Pod 관리
+| 날짜 | 에러 | 원인 | 해결 방법 |
+|------|------|------|----------|
+| 2026-03-10 | Pod readiness probe 실패 | `initialDelaySeconds`가 너무 짧아 Spring Boot 기동 전에 probe 실행 | `initialDelaySeconds`를 30s로 증가 |
 
-```bash
-# 모든 Pod 확인
-kubectl get pods -A
-
-# 특정 네임스페이스 Pod 확인
-kubectl get pods -n spring-gitops-demo-dev
-kubectl get pods -n spring-gitops-demo-prod
-
-# Pod 로그 확인
-kubectl logs -f <pod-name> -n <namespace>
-
-# Pod 재시작 (Deployment)
-kubectl rollout restart deployment/spring-gitops-demo -n spring-gitops-demo-dev
-```
-
-### ArgoCD CLI (선택사항)
-
-```bash
-# ArgoCD CLI 설치
-brew install argocd
-
-# 로그인
-argocd login localhost:8080 --insecure
-
-# Application 목록
-argocd app list
-
-# 수동 동기화
-argocd app sync spring-gitops-demo-dev
-
-# Application 상태 확인
-argocd app get spring-gitops-demo-dev
-```
-
----
-
-## 트러블슈팅
-
-### Kubernetes 연결 실패
-
-```bash
-# OrbStack Kubernetes 상태 확인
-orbctl status
-
-# Kubernetes 재시작
-orbctl stop k8s
-orbctl start k8s
-```
-
-### ArgoCD Pod가 시작되지 않음
-
-```bash
-# Pod 상태 확인
-kubectl get pods -n argocd
-
-# Pod 상세 정보
-kubectl describe pod <pod-name> -n argocd
-
-# 이벤트 확인
-kubectl get events -n argocd --sort-by='.lastTimestamp'
-```
-
-### 포트 충돌
-
-```bash
-# 8080 포트 사용 중인 프로세스 확인
-lsof -i :8080
-
-# 프로세스 종료
-kill -9 <PID>
-```
-
----
-
-## 환경 변수
-
-| 변수명 | 설명 | 기본값 |
-|--------|------|--------|
-| `APP_MESSAGE` | 환영 메시지 | Hello from Spring Boot! |
-| `SPRING_PROFILES_ACTIVE` | Spring 프로파일 | default |
-| `SERVER_PORT` | 서버 포트 | 8080 |
-
----
-
-## 참고 링크
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [OrbStack Documentation](https://docs.orbstack.dev/)
-- [Kustomize Documentation](https://kustomize.io/)
+> 상세 내용은 `docs/changelog.md` 참고

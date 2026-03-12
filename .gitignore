@@ -30,3 +30,8 @@ logs/
 # Environment
 .env
 .env.local
+
+# Local only (not for git)
+CLAUDE.md
+claude.md
+process_personal_md
